@@ -24,6 +24,7 @@ cp "$SOURCE_DIR/build-global-widget.sh" "$ROOT/build-global-widget.sh"
 cp "$SOURCE_DIR/start-global-widget.sh" "$ROOT/start-global-widget.sh"
 cp "$SOURCE_DIR/install-to-home.sh" "$ROOT/install-to-home.sh"
 [ -f "$SOURCE_DIR/AgentTasks.icns" ] && cp "$SOURCE_DIR/AgentTasks.icns" "$ROOT/AgentTasks.icns"
+[ -f "$SOURCE_DIR/image.png" ] && cp "$SOURCE_DIR/image.png" "$ROOT/image.png"
 chmod +x "$ROOT/build-global-widget.sh" "$ROOT/start-global-widget.sh"
 chmod +x "$ROOT/install-to-home.sh"
 
