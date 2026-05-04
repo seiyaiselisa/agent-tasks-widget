@@ -23,6 +23,7 @@ cp "$SOURCE_DIR/AgentTasksPanel.swift" "$ROOT/AgentTasksPanel.swift"
 cp "$SOURCE_DIR/build-global-widget.sh" "$ROOT/build-global-widget.sh"
 cp "$SOURCE_DIR/start-global-widget.sh" "$ROOT/start-global-widget.sh"
 cp "$SOURCE_DIR/install-to-home.sh" "$ROOT/install-to-home.sh"
+[ -f "$SOURCE_DIR/AgentTasks.icns" ] && cp "$SOURCE_DIR/AgentTasks.icns" "$ROOT/AgentTasks.icns"
 chmod +x "$ROOT/build-global-widget.sh" "$ROOT/start-global-widget.sh"
 chmod +x "$ROOT/install-to-home.sh"
 
@@ -52,6 +53,8 @@ cat > "$CONTENTS_DIR/Info.plist" <<'PLIST'
   <string>Agent Tasks</string>
   <key>CFBundleDisplayName</key>
   <string>Agent Tasks</string>
+  <key>CFBundleIconFile</key>
+  <string>AgentTasks.icns</string>
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>CFBundleShortVersionString</key>
@@ -82,6 +85,10 @@ exec "$ROOT/build/AgentTasksPanel" "$URL"
 LAUNCHER
 
 chmod +x "$MACOS_DIR/AgentTasksLauncher"
+
+if [ -f "$ROOT/AgentTasks.icns" ]; then
+  cp "$ROOT/AgentTasks.icns" "$CONTENTS_DIR/Resources/AgentTasks.icns"
+fi
 
 if [ "$INSTALL_LAUNCH_AGENT" = "1" ]; then
   cat > "$LAUNCH_AGENT" <<PLIST

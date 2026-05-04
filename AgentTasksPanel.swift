@@ -16,21 +16,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
 
         panel = NSPanel(
             contentRect: NSRect(origin: origin, size: NSSize(width: width, height: height)),
-            styleMask: [.nonactivatingPanel, .titled, .closable, .resizable, .fullSizeContentView],
+            styleMask: [.nonactivatingPanel, .titled, .closable, .resizable, .miniaturizable],
             backing: .buffered,
             defer: false
         )
         panel.title = "Agent Tasks"
-        panel.titleVisibility = .hidden
-        panel.titlebarAppearsTransparent = true
+        panel.titleVisibility = .visible
+        panel.titlebarAppearsTransparent = false
         panel.isMovableByWindowBackground = true
         panel.level = .floating
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary]
         panel.hidesOnDeactivate = false
         panel.isReleasedWhenClosed = false
         panel.minSize = NSSize(width: 280, height: 240)
-        panel.backgroundColor = .clear
-        panel.isOpaque = false
+        panel.backgroundColor = NSColor.windowBackgroundColor
+        panel.isOpaque = true
 
         let config = WKWebViewConfiguration()
         config.preferences.javaScriptCanOpenWindowsAutomatically = false

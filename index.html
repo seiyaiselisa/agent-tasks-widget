@@ -7,18 +7,19 @@
   <style>
     :root {
       color-scheme: light dark;
-      --bg: #101214;
-      --panel: #181c20;
-      --text: #f4f6f8;
-      --muted: #9aa4af;
-      --border: #2c333a;
-      --running: #2f80ed;
-      --blocked: #d97706;
-      --done: #22a06b;
-      --queued: #8b949e;
-      --codex: #38bdf8;
-      --claude: #f97316;
-      --other-agent: #a78bfa;
+      --bg: #041d33;
+      --panel: #062b49;
+      --panel-strong: #073a63;
+      --text: #f8fbff;
+      --muted: #b8d5ea;
+      --border: #0a5f9f;
+      --running: #0497ef;
+      --blocked: #ffd21f;
+      --done: #38d996;
+      --queued: #e9f4ff;
+      --codex: #ffd21f;
+      --claude: #ff321f;
+      --other-agent: #f8fbff;
       --font-scale: 1;
       font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
@@ -36,11 +37,11 @@
 
     .widget {
       width: min(390px, calc(100vw - 24px));
-      margin: 12px;
+      margin: 16px;
       border: 1px solid var(--border);
       border-radius: 8px;
       background: color-mix(in srgb, var(--panel) 94%, transparent);
-      box-shadow: 0 16px 40px rgb(0 0 0 / 30%);
+      box-shadow: 0 16px 40px rgb(0 28 58 / 42%);
       overflow: hidden;
     }
 
@@ -49,7 +50,7 @@
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      padding: 10px 12px;
+      padding: 12px 14px;
       border-bottom: 1px solid var(--border);
     }
 
@@ -79,7 +80,7 @@
       height: 24px;
       border: 1px solid var(--border);
       border-radius: 6px;
-      background: #222831;
+      background: var(--panel-strong);
       color: var(--text);
       font: inherit;
       font-size: 11px;
@@ -97,7 +98,7 @@
 
     .font-button:hover,
     .position-button:hover {
-      background: #2b333d;
+      background: #0a4f85;
     }
 
     h1 {
@@ -155,14 +156,18 @@
       min-width: 72px;
       border-radius: 999px;
       padding: 3px 8px;
-      color: white;
+      color: #061421;
       font-size: calc(11px * var(--font-scale));
       font-weight: 650;
       text-align: center;
       text-transform: uppercase;
     }
 
-    .running { background: var(--running); }
+    .running {
+      background: var(--running);
+      color: white;
+    }
+
     .blocked { background: var(--blocked); }
     .done { background: var(--done); }
     .queued { background: var(--queued); }
