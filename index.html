@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Agent Tasks</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #101214;
+      --panel: #181c20;
+      --text: #f4f6f8;
+      --muted: #9aa4af;
+      --border: #2c333a;
+      --running: #2f80ed;
+      --blocked: #d97706;
+      --done: #22a06b;
+      --queued: #8b949e;
+      --codex: #38bdf8;
+      --claude: #f97316;
+      --other-agent: #a78bfa;
+      --font-scale: 1;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      background: transparent;
+      color: var(--text);
+    }
+
+    .widget {
+      width: min(390px, calc(100vw - 24px));
+      margin: 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--panel) 94%, transparent);
+      box-shadow: 0 16px 40px rgb(0 0 0 / 30%);
+      overflow: hidden;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .header-left,
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .font-controls {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .panel-controls {
+      display: grid;
+      grid-template-columns: repeat(2, 18px);
+      gap: 3px;
+    }
+
+    .font-button,
+    .position-button {
+      width: 28px;
+      height: 24px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: #222831;
+      color: var(--text);
+      font: inherit;
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    .position-button {
+      width: 18px;
+      height: 18px;
+      padding: 0;
+      font-size: 9px;
+    }
+
+    .font-button:hover,
+    .position-button:hover {
+      background: #2b333d;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: calc(14px * var(--font-scale));
+      font-weight: 650;
+      letter-spacing: 0;
+    }
+
+    .meta {
+      color: var(--muted);
+      font-size: calc(11px * var(--font-scale));
+      white-space: nowrap;
+    }
+
+    .list {
+      display: grid;
+      gap: 1px;
+      background: var(--border);
+    }
+
+    .task {
+      display: grid;
+      gap: 5px;
+      padding: 10px 12px;
+      border-left: 4px solid var(--other-agent);
+      background: var(--panel);
+    }
+
+    .task.agent-codex {
+      border-left-color: var(--codex);
+    }
+
+    .task.agent-claude {
+      border-left-color: var(--claude);
+    }
+
+    .task-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .title {
+      min-width: 0;
+      overflow-wrap: anywhere;
+      font-size: calc(13px * var(--font-scale));
+      font-weight: 650;
+      line-height: 1.35;
+    }
+
+    .badge {
+      flex: 0 0 auto;
+      min-width: 72px;
+      border-radius: 999px;
+      padding: 3px 8px;
+      color: white;
+      font-size: calc(11px * var(--font-scale));
+      font-weight: 650;
+      text-align: center;
+      text-transform: uppercase;
+    }
+
+    .running { background: var(--running); }
+    .blocked { background: var(--blocked); }
+    .done { background: var(--done); }
+    .queued { background: var(--queued); }
+
+    .summary,
+    .details {
+      margin: 0;
+      color: var(--muted);
+      font-size: calc(12px * var(--font-scale));
+      line-height: 1.45;
+      overflow-wrap: anywhere;
+    }
+
+    .details {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .agent-label {
+      font-weight: 700;
+    }
+
+    .agent-codex .agent-label {
+      color: var(--codex);
+    }
+
+    .agent-claude .agent-label {
+      color: var(--claude);
+    }
+
+    .empty,
+    .error {
+      padding: 16px 12px;
+      background: var(--panel);
+      color: var(--muted);
+      font-size: calc(12px * var(--font-scale));
+      line-height: 1.5;
+    }
+
+    .error {
+      color: #ffb4a8;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <main class="widget" aria-live="polite">
+    <header class="header">
+      <div class="header-left">
+        <h1>Agent Tasks</h1>
+        <div class="font-controls" aria-label="文字サイズ">
+          <button id="fontDown" class="font-button" type="button" title="文字を小さくする">A-</button>
+          <button id="fontUp" class="font-button" type="button" title="文字を大きくする">A+</button>
+        </div>
+        <div class="panel-controls" aria-label="表示位置">
+          <button class="position-button" type="button" data-position="top-left" title="左上へ移動">NW</button>
+          <button class="position-button" type="button" data-position="top-right" title="右上へ移動">NE</button>
+          <button class="position-button" type="button" data-position="bottom-left" title="左下へ移動">SW</button>
+          <button class="position-button" type="button" data-position="bottom-right" title="右下へ移動">SE</button>
+        </div>
+      </div>
+      <div class="header-right">
+        <div id="meta" class="meta">loading</div>
+      </div>
+    </header>
+    <section id="list" class="list"></section>
+  </main>
+
+  <script>
+    const yamlPath = new URLSearchParams(location.search).get("src") || "tasks.yaml";
+    const refreshMs = Number(new URLSearchParams(location.search).get("refresh") || 3000);
+    const list = document.querySelector("#list");
+    const meta = document.querySelector("#meta");
+    const fontDown = document.querySelector("#fontDown");
+    const fontUp = document.querySelector("#fontUp");
+    const positionButtons = document.querySelectorAll("[data-position]");
+    const fontScaleKey = "agentTasksFontScale";
+    let lastText = "";
+
+    function clamp(value, min, max) {
+      return Math.min(max, Math.max(min, value));
+    }
+
+    function setFontScale(scale) {
+      const next = clamp(Number(scale) || 1, 0.8, 1.5);
+      document.documentElement.style.setProperty("--font-scale", String(next));
+      localStorage.setItem(fontScaleKey, String(next));
+    }
+
+    setFontScale(localStorage.getItem(fontScaleKey) || 1);
+    fontDown.addEventListener("click", () => {
+      setFontScale(Number(localStorage.getItem(fontScaleKey) || 1) - 0.1);
+    });
+    fontUp.addEventListener("click", () => {
+      setFontScale(Number(localStorage.getItem(fontScaleKey) || 1) + 0.1);
+    });
+    positionButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        const position = button.dataset.position;
+        if (window.webkit?.messageHandlers?.panel) {
+          window.webkit.messageHandlers.panel.postMessage({ action: "move", position });
+        }
+      });
+    });
+
+    function parseValue(value) {
+      const trimmed = value.trim();
+      if ((trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+          (trimmed.startsWith("'") && trimmed.endsWith("'"))) {
+        return trimmed.slice(1, -1);
+      }
+      if (trimmed === "true") return true;
+      if (trimmed === "false") return false;
+      return trimmed;
+    }
+
+    function parseTaskYaml(text) {
+      const result = { updated: "", tasks: [] };
+      let current = null;
+
+      for (const rawLine of text.split(/\r?\n/)) {
+        const line = rawLine.replace(/\s+#.*$/, "");
+        if (!line.trim() || line.trim() === "tasks:") continue;
+
+        const topLevel = line.match(/^([A-Za-z0-9_-]+):\s*(.*)$/);
+        if (topLevel && !line.startsWith(" ")) {
+          result[topLevel[1]] = parseValue(topLevel[2]);
+          continue;
+        }
+
+        const itemStart = line.match(/^\s*-\s+([A-Za-z0-9_-]+):\s*(.*)$/);
+        if (itemStart) {
+          current = {};
+          current[itemStart[1]] = parseValue(itemStart[2]);
+          result.tasks.push(current);
+          continue;
+        }
+
+        const property = line.match(/^\s+([A-Za-z0-9_-]+):\s*(.*)$/);
+        if (property && current) {
+          current[property[1]] = parseValue(property[2]);
+        }
+      }
+
+      return result;
+    }
+
+    function statusClass(status) {
+      const normalized = String(status || "queued").toLowerCase();
+      if (["running", "blocked", "done", "queued"].includes(normalized)) return normalized;
+      return "queued";
+    }
+
+    function agentClass(agent) {
+      const normalized = String(agent || "").toLowerCase();
+      if (normalized === "codex") return "agent-codex";
+      if (normalized === "claude") return "agent-claude";
+      return "agent-other";
+    }
+
+    function render(data) {
+      const tasks = Array.isArray(data.tasks) ? data.tasks : [];
+      meta.textContent = data.updated ? `updated ${data.updated}` : new Date().toLocaleTimeString();
+
+      if (!tasks.length) {
+        list.innerHTML = '<div class="empty">tasks.yaml にタスクを追加してください。</div>';
+        return;
+      }
+
+      list.innerHTML = tasks.map((task) => {
+        const status = statusClass(task.status);
+        const agentCssClass = agentClass(task.agent);
+        const title = escapeHtml(task.title || "(untitled)");
+        const agent = escapeHtml(task.agent || "agent");
+        const summary = escapeHtml(task.summary || "");
+        const since = escapeHtml(task.since || "");
+        const url = task.url ? String(task.url) : "";
+        const titleHtml = url
+          ? `<a href="${escapeAttr(url)}" target="_blank" rel="noreferrer">${title}</a>`
+          : title;
+
+        return `
+          <article class="task ${agentCssClass}">
+            <div class="task-top">
+              <div class="title">${titleHtml}</div>
+              <div class="badge ${status}">${escapeHtml(status)}</div>
+            </div>
+            ${summary ? `<p class="summary">${summary}</p>` : ""}
+            <p class="details"><span class="agent-label">${agent}</span>${since ? `<span>since ${since}</span>` : ""}</p>
+          </article>
+        `;
+      }).join("");
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+      }[char]));
+    }
+
+    function escapeAttr(value) {
+      return escapeHtml(value).replace(/`/g, "&#96;");
+    }
+
+    async function refresh() {
+      try {
+        const response = await fetch(`${yamlPath}?t=${Date.now()}`, { cache: "no-store" });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const text = await response.text();
+        if (text !== lastText) {
+          lastText = text;
+          render(parseTaskYaml(text));
+        }
+      } catch (error) {
+        list.innerHTML = `<div class="error">YAML を読み込めません: ${escapeHtml(error.message)}</div>`;
+        meta.textContent = "error";
+      }
+    }
+
+    refresh();
+    setInterval(refresh, refreshMs);
+  </script>
+</body>
+</html>
