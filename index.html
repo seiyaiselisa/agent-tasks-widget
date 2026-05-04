@@ -63,31 +63,50 @@
       min-width: 0;
     }
 
+    .footer {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 6px;
+      padding: 6px 10px;
+      border-top: 1px solid var(--border);
+      background: color-mix(in srgb, var(--panel-strong) 80%, transparent);
+    }
+
     .font-controls {
       display: flex;
       align-items: center;
       gap: 4px;
     }
 
-    .panel-controls {
-      display: grid;
-      grid-template-columns: repeat(2, 18px);
-      gap: 3px;
-    }
-
-    .font-button,
-    .position-button {
-      width: 28px;
-      height: 24px;
+    .font-button {
+      position: relative;
+      width: 30px;
+      height: 26px;
+      padding: 0;
       border: 1px solid var(--border);
       border-radius: 6px;
       background: var(--panel-strong);
       color: var(--text);
       font: inherit;
-      font-size: 11px;
       font-weight: 700;
       line-height: 1;
       cursor: pointer;
+    }
+
+    .font-button .glyph {
+      font-size: 14px;
+      letter-spacing: 0;
+    }
+
+    .font-button .op {
+      position: absolute;
+      right: 4px;
+      bottom: 3px;
+      font-size: 8px;
+      font-weight: 800;
+      line-height: 1;
+      color: var(--muted);
     }
 
     .position-button {
@@ -97,8 +116,7 @@
       font-size: 9px;
     }
 
-    .font-button:hover,
-    .position-button:hover {
+    .font-button:hover {
       background: #0a4f85;
     }
 
@@ -250,8 +268,20 @@
     .agent-group {
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 6px;
     }
+
+    .group-header {
+      padding: 6px 12px 0;
+      font-size: calc(10px * var(--font-scale));
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .group-header.agent-codex { color: var(--codex); }
+    .group-header.agent-claude { color: var(--claude); }
 
     .older {
       margin: 0;
@@ -296,16 +326,6 @@
     <header class="header">
       <div class="header-left">
         <h1>Fujiko</h1>
-        <div class="font-controls" aria-label="文字サイズ">
-          <button id="fontDown" class="font-button" type="button" title="文字を小さくする">A-</button>
-          <button id="fontUp" class="font-button" type="button" title="文字を大きくする">A+</button>
-        </div>
-        <div class="panel-controls" aria-label="表示位置">
-          <button class="position-button" type="button" data-position="top-left" title="左上へ移動">NW</button>
-          <button class="position-button" type="button" data-position="top-right" title="右上へ移動">NE</button>
-          <button class="position-button" type="button" data-position="bottom-left" title="左下へ移動">SW</button>
-          <button class="position-button" type="button" data-position="bottom-right" title="右下へ移動">SE</button>
-        </div>
       </div>
       <div class="header-right">
         <div id="counts" class="counts" aria-label="進捗"></div>
@@ -313,6 +333,16 @@
       </div>
     </header>
     <section id="list" class="list"></section>
+    <footer class="footer">
+      <div class="font-controls" aria-label="文字サイズ">
+        <button id="fontDown" class="font-button" type="button" title="文字を小さくする">
+          <span class="glyph">A</span><span class="op">−</span>
+        </button>
+        <button id="fontUp" class="font-button" type="button" title="文字を大きくする">
+          <span class="glyph">A</span><span class="op">+</span>
+        </button>
+      </div>
+    </footer>
   </main>
 
   <script>
@@ -323,7 +353,6 @@
     const counts = document.querySelector("#counts");
     const fontDown = document.querySelector("#fontDown");
     const fontUp = document.querySelector("#fontUp");
-    const positionButtons = document.querySelectorAll("[data-position]");
     const fontScaleKey = "agentTasksFontScale";
     let lastText = "";
 
@@ -343,14 +372,6 @@
     });
     fontUp.addEventListener("click", () => {
       setFontScale(Number(localStorage.getItem(fontScaleKey) || 1) + 0.1);
-    });
-    positionButtons.forEach((button) => {
-      button.addEventListener("click", () => {
-        const position = button.dataset.position;
-        if (window.webkit?.messageHandlers?.panel) {
-          window.webkit.messageHandlers.panel.postMessage({ action: "move", position });
-        }
-      });
     });
 
     function parseValue(value) {
@@ -424,12 +445,12 @@
 
       const groups = new Map();
       for (const task of tasks) {
-        const key = String(task.agent || "agent").toLowerCase();
-        if (!groups.has(key)) groups.set(key, []);
-        groups.get(key).push(task);
+        const key = String(task.thread || task.agent || "agent").toLowerCase();
+        if (!groups.has(key)) groups.set(key, { label: task.thread || task.agent || "agent", tasks: [] });
+        groups.get(key).tasks.push(task);
       }
 
-      list.innerHTML = Array.from(groups.values()).map((group) => {
+      list.innerHTML = Array.from(groups.values()).map(({ label, tasks: group }) => {
         const [latest, ...older] = group;
         const olderHtml = older.length
           ? `<details class="older">
@@ -437,7 +458,8 @@
                <div class="older-list">${older.map(renderTask).join("")}</div>
              </details>`
           : "";
-        return `<div class="agent-group">${renderTask(latest)}${olderHtml}</div>`;
+        const headerHtml = `<div class="group-header ${agentClass(latest.agent)}">${escapeHtml(label)}</div>`;
+        return `<div class="agent-group">${headerHtml}${renderTask(latest)}${olderHtml}</div>`;
       }).join("");
     }
 

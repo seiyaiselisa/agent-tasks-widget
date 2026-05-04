@@ -35,6 +35,7 @@ tasks:
     status: "running"
     summary: "現在状況を1文で書く"
     project: "作業中のプロジェクト名（cwdのbasename等）"
+    thread: "claude-<cwd_basename>-<short_id>"
     since: "HH:MM"
     url: ""
 ```
@@ -46,6 +47,7 @@ tasks:
 - `title`: ユーザー依頼の短い要約。
 - `summary`: widget に表示できる短い現在状況。
 - `project`: 作業中のプロジェクト名。基本は cwd の basename（例 `AgentTasksWidget`）、特定ファイルを編集中なら `日本遺伝子医学申込書` のような分かる短い名前。
+- `thread`: ターミナルウィンドウ（Claude Code セッション）ごとに一意の識別子。会話内では値を**変えずに同じ値を使い続ける**こと。形式例 `claude-<cwd_basename>-<short_id>`。`<short_id>` は `$CLAUDE_CODE_SSE_PORT` の値、無ければ `$$`（shell PID）の下4桁を使う。最初に1回 `bash` で値を取得して、それ以降は同一値を貼り続ける。
 - `since`: 作業開始時刻。分かる範囲で `HH:MM`。
 - `url`: 関連 URL がある場合だけ入れる。なければ空文字。
 
@@ -59,6 +61,7 @@ tasks:
     status: "running"
     summary: "資料を確認しながら申請書の初稿を作成中です。"
     project: "申請書ドラフト"
+    thread: "claude-shinseisho-14345"
     since: "16:30"
     url: ""
 ```
