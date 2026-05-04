@@ -4,6 +4,7 @@ import WebKit
 final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler {
     private var panel: NSPanel!
     private var webView: WKWebView!
+    private var statusItem: NSStatusItem!
     private let defaults = UserDefaults.standard
     private let positionKey = "panelPosition"
 
@@ -20,7 +21,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
             backing: .buffered,
             defer: false
         )
-        panel.title = "Agent Tasks"
+        panel.title = "Fujiko"
         panel.titleVisibility = .visible
         panel.titlebarAppearsTransparent = false
         panel.isMovableByWindowBackground = true
@@ -43,9 +44,59 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
         panel.makeKeyAndOrderFront(nil)
         NSApp.setActivationPolicy(.accessory)
 
+        installStatusItem()
+
         if let url = URL(string: target) {
             webView.load(URLRequest(url: url))
         }
+    }
+
+    private func installStatusItem() {
+        let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
+        if let button = item.button {
+            button.image = loadStatusIcon()
+            button.toolTip = "Fujiko"
+        }
+
+        let menu = NSMenu()
+        menu.addItem(withTitle: "Show widget", action: #selector(showWidget), keyEquivalent: "")
+        menu.addItem(withTitle: "Hide widget", action: #selector(hideWidget), keyEquivalent: "")
+        menu.addItem(NSMenuItem.separator())
+        let quit = NSMenuItem(title: "Quit Fujiko", action: #selector(quitApp), keyEquivalent: "q")
+        quit.target = self
+        menu.addItem(quit)
+        for entry in menu.items where entry.target == nil { entry.target = self }
+        item.menu = menu
+        self.statusItem = item
+    }
+
+    private func loadStatusIcon() -> NSImage? {
+        let exeDir = URL(fileURLWithPath: CommandLine.arguments[0]).deletingLastPathComponent()
+        let parent = exeDir.deletingLastPathComponent()
+        let candidates = [
+            parent.appendingPathComponent("image.png"),
+            parent.appendingPathComponent("AgentTasks.icns"),
+        ]
+        for url in candidates {
+            if let image = NSImage(contentsOf: url) {
+                image.size = NSSize(width: 18, height: 18)
+                return image
+            }
+        }
+        return NSImage(systemSymbolName: "list.bullet.rectangle", accessibilityDescription: "Agent Tasks")
+    }
+
+    @objc private func showWidget() {
+        panel.makeKeyAndOrderFront(nil)
+        panel.orderFrontRegardless()
+    }
+
+    @objc private func hideWidget() {
+        panel.orderOut(nil)
+    }
+
+    @objc private func quitApp() {
+        NSApp.terminate(nil)
     }
 
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {

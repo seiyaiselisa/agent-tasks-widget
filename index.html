@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Agent Tasks</title>
+  <title>Fujiko</title>
   <link rel="icon" type="image/png" href="image.png">
   <style>
     :root {
@@ -37,7 +37,7 @@
     }
 
     .widget {
-      width: min(390px, calc(100vw - 24px));
+      width: calc(100vw - 32px);
       margin: 16px;
       border: 1px solid var(--border);
       border-radius: 8px;
@@ -113,6 +113,26 @@
       color: var(--muted);
       font-size: calc(11px * var(--font-scale));
       white-space: nowrap;
+    }
+
+    .counts {
+      display: flex;
+      align-items: baseline;
+      gap: 4px;
+      color: var(--text);
+      font-size: calc(12px * var(--font-scale));
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .counts .counts-num {
+      font-size: calc(15px * var(--font-scale));
+      color: var(--done);
+    }
+
+    .counts .counts-total {
+      color: var(--muted);
+      font-weight: 500;
     }
 
     .list {
@@ -192,6 +212,11 @@
       font-weight: 700;
     }
 
+    .project {
+      color: var(--muted);
+      font-weight: 600;
+    }
+
     .agent-codex .agent-label {
       color: var(--codex);
     }
@@ -221,13 +246,56 @@
     a:hover {
       text-decoration: underline;
     }
+
+    .agent-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .older {
+      margin: 0;
+      padding: 0;
+    }
+
+    .older > summary {
+      list-style: none;
+      cursor: pointer;
+      padding: 4px 10px;
+      color: var(--muted);
+      font-size: calc(11px * var(--font-scale));
+      user-select: none;
+    }
+
+    .older > summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .older > summary::before {
+      content: "▸ ";
+    }
+
+    .older[open] > summary::before {
+      content: "▾ ";
+    }
+
+    .older[open] > summary {
+      margin-bottom: 6px;
+    }
+
+    .older-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      opacity: 0.85;
+    }
   </style>
 </head>
 <body>
   <main class="widget" aria-live="polite">
     <header class="header">
       <div class="header-left">
-        <h1>Agent Tasks</h1>
+        <h1>Fujiko</h1>
         <div class="font-controls" aria-label="文字サイズ">
           <button id="fontDown" class="font-button" type="button" title="文字を小さくする">A-</button>
           <button id="fontUp" class="font-button" type="button" title="文字を大きくする">A+</button>
@@ -240,6 +308,7 @@
         </div>
       </div>
       <div class="header-right">
+        <div id="counts" class="counts" aria-label="進捗"></div>
         <div id="meta" class="meta">loading</div>
       </div>
     </header>
@@ -251,6 +320,7 @@
     const refreshMs = Number(new URLSearchParams(location.search).get("refresh") || 3000);
     const list = document.querySelector("#list");
     const meta = document.querySelector("#meta");
+    const counts = document.querySelector("#counts");
     const fontDown = document.querySelector("#fontDown");
     const fontUp = document.querySelector("#fontUp");
     const positionButtons = document.querySelectorAll("[data-position]");
@@ -342,34 +412,58 @@
       const tasks = Array.isArray(data.tasks) ? data.tasks : [];
       meta.textContent = data.updated ? `updated ${data.updated}` : new Date().toLocaleTimeString();
 
+      const done = tasks.filter((t) => statusClass(t.status) === "done").length;
+      counts.innerHTML = tasks.length
+        ? `<span class="counts-num">${done}</span><span class="counts-total">/ ${tasks.length} done</span>`
+        : "";
+
       if (!tasks.length) {
         list.innerHTML = '<div class="empty">tasks.yaml にタスクを追加してください。</div>';
         return;
       }
 
-      list.innerHTML = tasks.map((task) => {
-        const status = statusClass(task.status);
-        const agentCssClass = agentClass(task.agent);
-        const title = escapeHtml(task.title || "(untitled)");
-        const agent = escapeHtml(task.agent || "agent");
-        const summary = escapeHtml(task.summary || "");
-        const since = escapeHtml(task.since || "");
-        const url = task.url ? String(task.url) : "";
-        const titleHtml = url
-          ? `<a href="${escapeAttr(url)}" target="_blank" rel="noreferrer">${title}</a>`
-          : title;
+      const groups = new Map();
+      for (const task of tasks) {
+        const key = String(task.agent || "agent").toLowerCase();
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key).push(task);
+      }
 
-        return `
-          <article class="task ${agentCssClass}">
-            <div class="task-top">
-              <div class="title">${titleHtml}</div>
-              <div class="badge ${status}">${escapeHtml(status)}</div>
-            </div>
-            ${summary ? `<p class="summary">${summary}</p>` : ""}
-            <p class="details"><span class="agent-label">${agent}</span>${since ? `<span>since ${since}</span>` : ""}</p>
-          </article>
-        `;
+      list.innerHTML = Array.from(groups.values()).map((group) => {
+        const [latest, ...older] = group;
+        const olderHtml = older.length
+          ? `<details class="older">
+               <summary>過去のタスク (${older.length})</summary>
+               <div class="older-list">${older.map(renderTask).join("")}</div>
+             </details>`
+          : "";
+        return `<div class="agent-group">${renderTask(latest)}${olderHtml}</div>`;
       }).join("");
+    }
+
+    function renderTask(task) {
+      const status = statusClass(task.status);
+      const agentCssClass = agentClass(task.agent);
+      const title = escapeHtml(task.title || "(untitled)");
+      const agent = escapeHtml(task.agent || "agent");
+      const summary = escapeHtml(task.summary || "");
+      const since = escapeHtml(task.since || "");
+      const project = escapeHtml(task.project || "");
+      const url = task.url ? String(task.url) : "";
+      const titleHtml = url
+        ? `<a href="${escapeAttr(url)}" target="_blank" rel="noreferrer">${title}</a>`
+        : title;
+
+      return `
+        <article class="task ${agentCssClass}">
+          <div class="task-top">
+            <div class="title">${titleHtml}</div>
+            <div class="badge ${status}">${escapeHtml(status)}</div>
+          </div>
+          ${summary ? `<p class="summary">${summary}</p>` : ""}
+          <p class="details"><span class="agent-label">${agent}</span>${project ? `<span class="project">📂 ${project}</span>` : ""}${since ? `<span>since ${since}</span>` : ""}</p>
+        </article>
+      `;
     }
 
     function escapeHtml(value) {

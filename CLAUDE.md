@@ -34,6 +34,7 @@ tasks:
     title: "依頼内容の短い名前"
     status: "running"
     summary: "現在状況を1文で書く"
+    project: "作業中のプロジェクト名（cwdのbasename等）"
     since: "HH:MM"
     url: ""
 ```
@@ -44,6 +45,7 @@ tasks:
 - `status`: `running`, `blocked`, `done`, `queued` のいずれか。
 - `title`: ユーザー依頼の短い要約。
 - `summary`: widget に表示できる短い現在状況。
+- `project`: 作業中のプロジェクト名。基本は cwd の basename（例 `AgentTasksWidget`）、特定ファイルを編集中なら `日本遺伝子医学申込書` のような分かる短い名前。
 - `since`: 作業開始時刻。分かる範囲で `HH:MM`。
 - `url`: 関連 URL がある場合だけ入れる。なければ空文字。
 
@@ -56,6 +58,7 @@ tasks:
     title: "申請書ドラフト作成"
     status: "running"
     summary: "資料を確認しながら申請書の初稿を作成中です。"
+    project: "申請書ドラフト"
     since: "16:30"
     url: ""
 ```

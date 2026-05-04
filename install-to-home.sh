@@ -3,7 +3,8 @@ set -eu
 
 SOURCE_DIR="$(cd -- "$(dirname "$0")" && pwd)"
 ROOT="$HOME/AgentTasksWidget"
-APP_DIR="$HOME/Applications/Agent Tasks.app"
+APP_DIR="$HOME/Applications/Fujiko.app"
+LEGACY_APP_DIR="$HOME/Applications/Agent Tasks.app"
 CONTENTS_DIR="$APP_DIR/Contents"
 MACOS_DIR="$CONTENTS_DIR/MacOS"
 LAUNCH_AGENT="$HOME/Library/LaunchAgents/local.agent-tasks-widget.plist"
@@ -11,20 +12,31 @@ INSTALL_LAUNCH_AGENT="${INSTALL_LAUNCH_AGENT:-1}"
 
 mkdir -p "$ROOT" "$MACOS_DIR" "$CONTENTS_DIR/Resources" "$HOME/Applications" "$HOME/Library/LaunchAgents"
 
-cp "$SOURCE_DIR/index.html" "$ROOT/index.html"
-cp "$SOURCE_DIR/README.md" "$ROOT/README.md"
-[ -f "$SOURCE_DIR/USAGE.md" ] && cp "$SOURCE_DIR/USAGE.md" "$ROOT/USAGE.md"
-[ -f "$SOURCE_DIR/IMPROVEMENTS.md" ] && cp "$SOURCE_DIR/IMPROVEMENTS.md" "$ROOT/IMPROVEMENTS.md"
-[ -f "$SOURCE_DIR/.gitignore" ] && cp "$SOURCE_DIR/.gitignore" "$ROOT/.gitignore"
-[ -f "$SOURCE_DIR/tasks.example.yaml" ] && cp "$SOURCE_DIR/tasks.example.yaml" "$ROOT/tasks.example.yaml"
-[ -f "$SOURCE_DIR/AGENTS.md" ] && cp "$SOURCE_DIR/AGENTS.md" "$ROOT/AGENTS.md"
-[ -f "$SOURCE_DIR/CLAUDE.md" ] && cp "$SOURCE_DIR/CLAUDE.md" "$ROOT/CLAUDE.md"
-cp "$SOURCE_DIR/AgentTasksPanel.swift" "$ROOT/AgentTasksPanel.swift"
-cp "$SOURCE_DIR/build-global-widget.sh" "$ROOT/build-global-widget.sh"
-cp "$SOURCE_DIR/start-global-widget.sh" "$ROOT/start-global-widget.sh"
-cp "$SOURCE_DIR/install-to-home.sh" "$ROOT/install-to-home.sh"
-[ -f "$SOURCE_DIR/AgentTasks.icns" ] && cp "$SOURCE_DIR/AgentTasks.icns" "$ROOT/AgentTasks.icns"
-[ -f "$SOURCE_DIR/image.png" ] && cp "$SOURCE_DIR/image.png" "$ROOT/image.png"
+if [ -d "$LEGACY_APP_DIR" ] && [ "$LEGACY_APP_DIR" != "$APP_DIR" ]; then
+  rm -rf "$LEGACY_APP_DIR"
+fi
+
+copy_if_diff() {
+  src="$1"; dst="$2"
+  [ -f "$src" ] || return 0
+  if [ "$src" = "$dst" ]; then return 0; fi
+  cp "$src" "$dst"
+}
+
+copy_if_diff "$SOURCE_DIR/index.html" "$ROOT/index.html"
+copy_if_diff "$SOURCE_DIR/README.md" "$ROOT/README.md"
+copy_if_diff "$SOURCE_DIR/USAGE.md" "$ROOT/USAGE.md"
+copy_if_diff "$SOURCE_DIR/IMPROVEMENTS.md" "$ROOT/IMPROVEMENTS.md"
+copy_if_diff "$SOURCE_DIR/.gitignore" "$ROOT/.gitignore"
+copy_if_diff "$SOURCE_DIR/tasks.example.yaml" "$ROOT/tasks.example.yaml"
+copy_if_diff "$SOURCE_DIR/AGENTS.md" "$ROOT/AGENTS.md"
+copy_if_diff "$SOURCE_DIR/CLAUDE.md" "$ROOT/CLAUDE.md"
+copy_if_diff "$SOURCE_DIR/AgentTasksPanel.swift" "$ROOT/AgentTasksPanel.swift"
+copy_if_diff "$SOURCE_DIR/build-global-widget.sh" "$ROOT/build-global-widget.sh"
+copy_if_diff "$SOURCE_DIR/start-global-widget.sh" "$ROOT/start-global-widget.sh"
+copy_if_diff "$SOURCE_DIR/install-to-home.sh" "$ROOT/install-to-home.sh"
+copy_if_diff "$SOURCE_DIR/AgentTasks.icns" "$ROOT/AgentTasks.icns"
+copy_if_diff "$SOURCE_DIR/image.png" "$ROOT/image.png"
 chmod +x "$ROOT/build-global-widget.sh" "$ROOT/start-global-widget.sh"
 chmod +x "$ROOT/install-to-home.sh"
 
@@ -51,9 +63,9 @@ cat > "$CONTENTS_DIR/Info.plist" <<'PLIST'
   <key>CFBundleIdentifier</key>
   <string>local.agent-tasks-widget</string>
   <key>CFBundleName</key>
-  <string>Agent Tasks</string>
+  <string>Fujiko</string>
   <key>CFBundleDisplayName</key>
-  <string>Agent Tasks</string>
+  <string>Fujiko</string>
   <key>CFBundleIconFile</key>
   <string>AgentTasks.icns</string>
   <key>CFBundlePackageType</key>
